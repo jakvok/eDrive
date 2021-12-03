@@ -14,7 +14,7 @@ import serial
 import time
 
 PORT = '/dev/ttyUSB0'
-FILE = '/home/jakvok/robot/cron_temp/temper.dat' #soubor pro textovy zaznam
+DAT = '/home/jakvok/robot/cron_temp/temper.dat' #soubor pro textovy zaznam
 CSV = '/var/www/html/temper.csv' #soubor pro datove zpracovani
 
 def sendData(adresa, prikaz, ial):
@@ -154,7 +154,11 @@ def teplota(pe, prikaz):
 		print('teplota() neobdrzela data')
 		return False
 
-tep = [[],[],[],[]]
+
+
+
+
+tep = [list() for x in range(4)] # make list of four empty lists 
 
 for n in range(5):
 	while True:
@@ -195,15 +199,10 @@ text = '{:<20}{:<10}{:<10}{:<10}{:<10}\n'.format(time.strftime('%d.%m.%Y %H:%M')
 csv_text = '{};{};{};{};{}\n'.format(time.strftime('%d.%m.%Y %H:%M'),lota[0],lota[1],lota[2],lota[3])
 
 print(text)
-	
-f_dat = open(FILE,"a")
-f_dat.write(text)
-f_dat.close()
-	
-f_dat = open(CSV,"a")
-f_dat.write(csv_text)
-f_dat.close()
-		
-			
-			
 
+for file in DAT, CSV:
+	try:
+		with open(file, 'a', encoding='utf-8') as f_dat:
+			f_dat.write(text)
+	except:
+		print('Writing to file {} failed.'.format(file))
