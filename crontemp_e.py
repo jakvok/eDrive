@@ -71,7 +71,7 @@ def recieveData(nr_bytes, connection):
 		if not TEST:	
 			picaxe = connection.readline() # serial communication, read sequence of bytes
 		else:
-			picaxe = bytes(connection.readline(), 'utf8') # offline; read line from the test file and retype to bytes sequence
+			picaxe = bytes(connection.readline(), 'utf-8') # offline; read line from the test file and retype to bytes sequence
 		try:
 			for n in range(len(picaxe)): #iterate thru given sequence of bytes and searching bytes come after 'mask'
 				x = chr(picaxe[n]) + chr(picaxe[n+1]) + chr(picaxe[n+2]) + chr(picaxe[n+3])

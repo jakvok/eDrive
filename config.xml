@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<configuration>
+  <testing>True</testing>
+  <com_port>/dev/ttyUSB0</com_port>
+  <master_mask>p999</master_mask>
+  <test_port>./serport.txt</test_port>
+  <temperature>
+    <output>/home/jakvok/robot/eDrive/temper.csv</output>
+    <test_output>./temper_test.csv</test_output>
+  </temperature>
+</configuration>
