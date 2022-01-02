@@ -22,6 +22,8 @@ class Config:
                     self.test = False
             if node.tag == 'test_port': # source input file for testing
                 self.test_port = node.text
+            if node.tag == 'error_log':
+                self.errlog = node.text
 
     def exchangeData(self, device, command, nr_bytes):
         '''
@@ -31,38 +33,53 @@ class Config:
         Output: list() of single bytes() 
         '''
         result = []
-        try:
-            if not self.test:
-                with serial.Serial(self.port, 2400, timeout = 10) as ser:
-                    ser.flushInput() #clean serial input
-                    # string of device address+command retyped to bytes string and sent to serial bus
-                    ser.write(bytes(device + chr(command), 'utf-8'))
-                    time.sleep(1)
-                    picaxe = ser.readline() # read line of bytes from bus
-            else:
-                with open(self.test_port, 'r', encoding='utf-8') as ser:
-                    time.sleep(1)
-                    picaxe = bytes(ser.readline(), 'utf-8') # offline; read line from the test file and retype to bytes sequence
-            for n in range(len(picaxe)): #iterate thru given sequence of bytes and searching bytes come after 'mask'
-                x = chr(picaxe[n]) + chr(picaxe[n+1]) + chr(picaxe[n+2]) + chr(picaxe[n+3])
-                if x == self.master_mask: # if 'mask' found, append next bytes to return list
-                    try:
-                        for a in range(nr_bytes):
-                            result.append(picaxe[n+4+a])
-                    except IndexError:
-                        print('Too short message.')
-                    break
-            #print('dataExchange():',result)
-            return result
-        except serial.SerialException as e:
-            print('exchangeData:', e)
-            print(type(e).__name__)
-        except FileNotFoundError as e:
-            print('exchangeData:', e)
-            print(type(e).__name__)
+        while not result:
+            try:
+                if not self.test:
+                    with serial.Serial(self.port, 2400, timeout = 2) as ser:
+                        ser.flushInput() #clean serial input
+                        # string of device address+command retyped to bytes string and sent to serial bus
+                        ser.write(bytes(device + chr(command), 'utf-8'))
+                        print('To device {0} was sent command {1}.'.format(device, command))
+                        time.sleep(2)
+                        picaxe = ser.readline() # read line of bytes from bus
+                else:
+                    with open(self.test_port, 'r', encoding='utf-8') as ser:
+                        time.sleep(1)
+                        picaxe = bytes(ser.readline(), 'utf-8') # offline; read line from the test file and retype to bytes sequence
+                for n in range(len(picaxe)): #iterate thru given sequence of bytes and searching bytes come after 'mask'
+                    x = chr(picaxe[n]) + chr(picaxe[n+1]) + chr(picaxe[n+2]) + chr(picaxe[n+3])
+                    if x == self.master_mask: # if 'mask' found, append next bytes to return list
+                        try:
+                            for a in range(nr_bytes):
+                                result.append(picaxe[n+4+a])
+                        except IndexError:
+                            self.__log('exchangeData(): Expected count of bytes not found.')
+                        break
+            except serial.SerialException as e:
+                self.__log('exchangeData(): {0}; {1}'.format(e, type(e).__name__ ))
+            except FileNotFoundError as e:
+                self.__log('exchangeData(): {0}; {1}'.format(e, type(e).__name__ ))
+            except IndexError as e:
+                self.__log('exchangeData(): {0}; {1}'.format(e, type(e).__name__ ))
+        print('From device {0} come {1} bytes: {2}'.format(device, len(result), result))
+        return result
 
     def sendData(self, device, command):
         pass
+
+    def __log(self, text):
+        '''
+        Writes text to error log
+        '''
+        try:
+            with open(self.errlog, 'a', encoding='utf-8') as f:
+                if f.write(time.strftime('%d.%m.%Y %H:%M') + text):
+                    return True
+                else:
+                    return False
+        except:
+            print('Log failed.')
 
 
 class Temperature(Config):
@@ -88,8 +105,8 @@ class Temperature(Config):
         Output: +-float() temperature averange value from <repeat-2> count 
         '''
         if repeat < 3:
-            print('Min. <repeat> value=3')
-            return False
+            self.__log('measure(): Min. <repeat> value=3. Set to 3.')
+            repeat = 3
         temperatures = []
         for _ in range(repeat):
             datas = self.exchangeData(self.device, self.command, 2)
@@ -117,15 +134,8 @@ class Temperature(Config):
 
 
 
+
 '''
 temp = Temperature('p001', 81)
-
-print(temp.port)
-print(temp.master_mask)
-print(temp.test)
-print(temp.test_port)
-print(temp.output)
-print(temp.test_output)
-
-print(temp.measure())
+print(temp.errlog)
 '''

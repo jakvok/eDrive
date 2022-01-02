@@ -1,3 +1,7 @@
 /venv
 /venv/**
 venv_activation
+temper.csv
+temper_test.csv
+__pycache__/eDrive.cpython-38.pyc
+config.xml~

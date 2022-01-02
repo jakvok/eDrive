@@ -4,8 +4,9 @@
   <com_port>/dev/ttyUSB0</com_port>
   <master_mask>p999</master_mask>
   <test_port>./serport.txt</test_port>
+  <error_log>./eDrive.errlog</error_log>
   <temperature>
-    <output>/home/jakvok/robot/eDrive/temper.csv</output>
+    <output>/var/www/html/temper.csv</output>
     <test_output>./temper_test.csv</test_output>
   </temperature>
 </configuration>

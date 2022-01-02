@@ -1,0 +1,30 @@
+https://www.tecmint.com/install-apache-web-server-on-ubuntu-20-04/
+
+$ sudo systemctl is-active apache2
+$ sudo systemctl is-enabled apache2
+$ sudo systemctl status apache2
+
+$ sudo systemctl stop apache2      #stop apache2
+$ sudo systemctl start apache2     #start apache2
+$ sudo systemctl restart apache2   #restart apache2
+$ sudo systemctl reload apache2    #reload apache2
+$ sudo systemctl disable apache2   #disable apache2
+$ sudo systemctl enable apache2    #enable apache2
+
+
+/etc/apache2/*	#configuration folder
+
+/etc/apache2/apache2.conf – The main Apache global configuration file, that includes all other configuration files.
+/etc/apache2/conf-available – stores available configurations.
+/etc/apache2/conf-enabled – contains enabled configurations.
+/etc/apache2/mods-available – contains available modules.
+/etc/apache2/mods-enabled – contains enabled modules.
+/etc/apache2/sites-available – contains configuration file for available sites (virtual hosts).
+/etc/apache2/sites-enabled – contains configuration file for enabled sites (virtual hosts).
+
+Check config syntax and restart:
+$ sudo apache2ctl configtest
+$ sudo systemctl restart apache2
+
+place CSV file into apache source directory, usually /var/www/html/
+
