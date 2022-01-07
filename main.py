@@ -13,9 +13,8 @@ heat_water = eDrive.Temperature('p002', 82)
 data = '{};{};{};{};{}\n'.format(time.strftime('%d.%m.%Y %H:%M'),outside1.measure(),outside2.measure(),inside.measure(),heat_water.measure())
 print(data)
 
-output_file ='./temper.csv'
 try: # writing data to output file
-    with open(output_file, 'a', encoding='utf-8') as f:
+    with open(outside1.output, 'a', encoding='utf-8') as f:
         f.write(data)
 except:
-	print('Writing to file {} failed.'.format(output_file))
+	print('Writing to file {} failed.'.format(outside1.output))

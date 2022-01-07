@@ -1,34 +1,12 @@
 <?xml version='1.0' encoding='utf-8'?>
-<!--
-  eDrive configuration
-  ====================
-  Conf file is automatically created in ~/.eDrive/ home folder on linux
-  or in Users\[your username]\AppData\Roaming\eDrive home folder on Windows
-
-  Element <testing>:
-  if True, app reads data from text file instead of serial port,
-  if False, app use serial port.
-
-  Element <com_port>:
-  serial port for communication, change to port you are gona to use.
-
-  Element <master_mask>:
-  identificates your master device on serial bus. Use default value when
-  use default firmware for slave devices.
-
-  Element <test_port>:
-  file from where app reads bytes when testing mode on,
-  usually when serial bus is not available.
-  Automatically creates in eDrive home folder.
-
-  Element <error_log>:
-  file for logging error statements.
-  Automatically creates in eDrive home folder.
--->
 <configuration>
-  <testing>False</testing>
+  <testing>True</testing>
   <com_port>/dev/ttyUSB0</com_port>
   <master_mask>p999</master_mask>
-  <test_port>serport.txt</test_port>
-  <error_log>eDrive.errlog</error_log>
+  <test_port>./serport.txt</test_port>
+  <error_log>./eDrive.errlog</error_log>
+  <temperature>
+    <output>/var/www/html/temper.csv</output>
+    <test_output>./temper_test.csv</test_output>
+  </temperature>
 </configuration>
