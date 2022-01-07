@@ -180,10 +180,3 @@ class Temperature(Config):
                 alignByte(36) -> '00100100'
         '''
         return '0' * (8-len(str(bin(intbyte))[2:])) + str(bin(intbyte))[2:]
-
-
-
-temp = Temperature('p001', 81)
-
-print(temp.test, temp.port, temp.master_mask, temp.test_port, temp.errlog, temp.device, temp.command)
-print(temp.measure())
