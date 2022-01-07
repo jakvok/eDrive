@@ -2,28 +2,82 @@
 
 import time, serial
 import lxml.etree as et
+import sys, os
 
 class Config:
     '''
     Parental class. All inherited classes inherite basic configuration
     and methods for communication.
     '''
-    def __init__(self, cfile='./config.xml') -> None:
-        xml = et.parse(cfile)   # parse configuration from config xml file
-        for node in xml.iter():
-            if node.tag == 'com_port':
-                self.port = node.text   # comport for serial communication
-            if node.tag == 'master_mask':
-                self.master_mask = node.text # master's bus identification mask
-            if node.tag == 'testing':   # testing mode yes/no
-                if node.text == 'True':
-                    self.test = True
-                else:
-                    self.test = False
-            if node.tag == 'test_port': # source input file for testing
-                self.test_port = node.text
-            if node.tag == 'error_log': # file to log errors
-                self.errlog = node.text
+    def __init__(self) -> None:
+        # recognize used OS and setting app directory
+        if 'linux' in sys.platform:
+            home = os.path.join(os.getenv('HOME'), '.eDrive')
+        elif 'win32' in sys.platform:
+            home = os.path.join(os.getenv('APPDATA'), 'Roaming', 'eDrive')
+        else:
+            raise OSError('Not supported OS.')
+        try:
+            # create app directory when not exists
+            if not os.path.exists(home):
+                os.mkdir(home)
+        except:
+            print('Home directory {} creation failed.'.format(home))
+            raise PermissionError
+        cfile = os.path.join(home, 'config.xml') # setting configuration file
+        try:
+            xml = et.parse(cfile)   # parse configuration from config xml file
+            for node in xml.iter():
+                if node.tag == 'com_port':
+                    self.port = node.text   # read comport for serial communication
+                if node.tag == 'master_mask':
+                    self.master_mask = node.text #read master's bus identification mask
+                if node.tag == 'testing':   # read testing mode yes/no
+                    if node.text == 'True':
+                        self.test = True
+                    else:
+                        self.test = False
+                if node.tag == 'test_port': #read name of source input file for testing
+                    self.test_port = os.path.join(home, node.text)
+                if node.tag == 'error_log': #read name log errors file
+                    self.errlog = os.path.join(home, node.text)
+        except:
+            ''' 
+            When reading config file failed, create new one with default configuration
+            and set object attributes.
+            '''
+            config = et.Element('configuration')
+            # testing mode yes/no
+            testing = et.SubElement(config, 'testing')
+            testing.text = 'False'
+            self.test = False
+            # comport for serial communication, depending on OS
+            com_port = et.SubElement(config, 'com_port')
+            if 'linux' in sys.platform:
+                com_port.text = '/dev/ttyUSB0'
+                self.port = '/dev/ttyUSB0'
+            else:
+                com_port.text = self.port = 'COM1'
+                self.port = 'COM1'
+            # master's bus identification mask
+            master_mask = et.SubElement(config, 'master_mask')
+            master_mask.text = 'p999'
+            self.master_mask = 'p999'
+            # name of source input file for testing
+            test_port = et.SubElement(config, 'test_port')
+            test_port.text = str(os.path.join(home, 'serport.txt'))
+            self.test_port = os.path.join(home, 'serport.txt')
+            if not os.path.exists(self.test_port): # if test source file doesn't exist, create default one
+                with open(self.test_port, 'a', encoding='utf-8') as f:
+                    f.write('p999'+chr(14)+chr(55))
+            # name log errors file
+            errlog = et.SubElement(config, 'error_log')
+            errlog.text = str(os.path.join(home, 'eDrive.errlog'))
+            self.errlog = os.path.join(home, 'eDrive.errlog')
+            # write configuration file
+            document = et.tostring(config, pretty_print=True, xml_declaration=True, encoding="utf-8")
+            with open(cfile, 'wb') as f:
+                f.write(document)
 
     def exchangeData(self, device, command, nr_bytes):
         '''
@@ -33,7 +87,8 @@ class Config:
         Output: list() of single bytes() 
         '''
         result = []
-        while not result: # make communication attempts until response appears
+        rep = 5
+        while rep: # make max 5 communication attempts until response appears
             try:
                 if not self.test: # when not test mode, open serial connection
                     with serial.Serial(self.port, 2400, timeout = 0) as ser:
@@ -55,13 +110,12 @@ class Config:
                                 result.append(picaxe[n+4+a])
                         except IndexError:
                             self.__log('exchangeData(): Expected count of bytes not found.')
-                        break
-            except serial.SerialException as e:
+                        break # break for n
+                break # break while rep
+            except (serial.SerialException, FileNotFoundError, IndexError) as e:
                 self.__log('exchangeData(): {0}; {1}'.format(e, type(e).__name__ ))
-            except FileNotFoundError as e:
-                self.__log('exchangeData(): {0}; {1}'.format(e, type(e).__name__ ))
-            except IndexError as e:
-                self.__log('exchangeData(): {0}; {1}'.format(e, type(e).__name__ ))
+                if rep == 1: raise e # when 5 attempts gone, raise exception
+            rep -= 1
         print('From device {0} come {1} bytes: {2}'.format(device, len(result), result))
         return result
 
@@ -74,7 +128,7 @@ class Config:
         '''
         try:
             with open(self.errlog, 'a', encoding='utf-8') as f:
-                if f.write(time.strftime('%d.%m.%Y %H:%M') + text):
+                if f.write('{0} {1} \n'.format(time.strftime('%d.%m.%Y %H:%M'), text)):
                     return True
                 else:
                     return False
@@ -86,19 +140,12 @@ class Temperature(Config):
     '''
     Class represents temperature of the sensor at the device.
     At Picaxe08M hardware one device has two sensors, measurement at each sensor has it's own command.
-    Args: str() device name, int() command nr., str() config file
+    Args: str() device name, int() command nr.
     '''
-    def __init__(self, device, command, cfile='./config.xml') -> None:
-        super().__init__(cfile)
+    def __init__(self, device, command) -> None:
+        super().__init__()
         self.device = device
         self.command = command
-        xml = et.parse(cfile)   # read configuration from config xml file
-        for node in xml.iter():
-            if node.tag == 'temperature': # settings for obj Temperature are in element 'temperature'
-                self.output = node[0].text   # output file
-                self.test_output = node[1].text # test file output
-        if self.test: # when test mode on, set output to test output file
-            self.output = self.test_output
 
     def measure(self, repeat=5):
         '''
@@ -133,3 +180,10 @@ class Temperature(Config):
                 alignByte(36) -> '00100100'
         '''
         return '0' * (8-len(str(bin(intbyte))[2:])) + str(bin(intbyte))[2:]
+
+
+
+temp = Temperature('p001', 81)
+
+print(temp.test, temp.port, temp.master_mask, temp.test_port, temp.errlog, temp.device, temp.command)
+print(temp.measure())
